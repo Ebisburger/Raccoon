@@ -1,196 +1,61 @@
 import java.util.Scanner;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-public class Main extends JFrame implements ActionListener, KeyListener{
-    JLabel backgroundLabel;
+public class Test extends JFrame implements ActionListener, KeyListener {
     JButton startButton;
-    ImageIcon backgroundImage;
-
-    JButton mrScrappyButton;
-    JButton banditaButton;
-    JButton chadcoonButton;
-
-    ArrayList<Integer> checkpoints = new ArrayList<>();
-    ArrayList<ImageIcon> backgrounds = new ArrayList<>();
+    JLabel backgroundLabel;
+    ArrayList<ImageIcon> images = new ArrayList<>();
     int currentIndex = 0;
-    boolean allowScroll = true;
 
-    boolean mrScrappy = false;
-    boolean bandita = false;
-    boolean chadcoon = false;
-
-    public Main() {
+    public Test() {
+        // Window setup
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(null);
+        setPreferredSize(new Dimension(1320, 780));
+        setFocusable(true);
+        addKeyListener(this);
 
-        String[] startingImagePaths = {
-            "2.png",
-            "3.png",
-            "4.png",
-            "5.png",
-            "6.png",
-            "7.png",
-            "8.png",
-            "9.png",
-            "10.png",
-            "11.png",
-            "12.png",
+        String[] paths = {
+            "1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png",
+            "9.png", "10.png", "11.png", "12.png", "13.png", "14.png", "15.png",
+            "16.png", "17.png", "18.png", "19.png", "20.png", "21.png", "22.png",
+            "23.png", "24.png", "25.png", "26.png", "27.png", "28.png", "29.png",
+            "30.png", "31.png", "32.png", "33.png", "34.png", "35.png", "36.png",
         };
 
-        String[] mrScrappyImagePaths = {
-            "13.png",
-            "14.png",
-            "15.png",
-            "16.png",
-            "26.png",
-        };
-
-        String[] banditaImagePaths = {
-            "27.png",
-        };
-
-        String[] chadcoonImagePaths = {
-            "36.png",
-            "37.png",
-            "38.png",
-            "39.png",
-            "40.png",
-            "26.png",
-        };
-
-        for (String path : startingImagePaths) {
+        for (String path : paths) {
             ImageIcon original = new ImageIcon(path);
             Image scaled = original.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-            backgrounds.add(new ImageIcon(scaled));
+            images.add(new ImageIcon(scaled));
         }
 
-        for (String path : mrScrappyImagePaths) {
-            ImageIcon original = new ImageIcon(path);
-            Image scaled = original.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-            backgrounds.add(new ImageIcon(scaled));
-        }
-
-        for (String path : banditaImagePaths) {
-            ImageIcon original = new ImageIcon(path);
-            Image scaled = original.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-            backgrounds.add(new ImageIcon(scaled));
-        }
-
-        for (String path : chadcoonImagePaths) {
-            ImageIcon original = new ImageIcon(path);
-            Image scaled = original.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-            backgrounds.add(new ImageIcon(scaled));
-        }
-
-
-        checkpoints.add(10); // 12.png
-        checkpoints.add(14); // 16.png
-        checkpoints.add(27); // 29.png
-        checkpoints.add(24); // 26.png
-
-
-        // Resize image to fit the content pane exactly
-        ImageIcon originalIcon = new ImageIcon("startScreen.png");
-        int newWidth = 1320;
-        int newHeight = 780;
-        Image scaledImage = originalIcon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-        ImageIcon backgroundImage = new ImageIcon(scaledImage);
-
-        backgroundLabel = new JLabel(backgroundImage);
-        backgroundLabel.setBounds(0, 0, 1920, 1080);
-        backgroundLabel.setLayout(null); // needed to position child components
-        this.setContentPane(backgroundLabel); // set the background image as the content pane
-
-        // Buttons
+        // Image display
+        backgroundLabel = new JLabel(images.get(currentIndex));
+        backgroundLabel.setBounds(0, 0, 1320, 780);
+        add(backgroundLabel);
+        
         startButton = new JButton();
-        startButton.setBounds(500, 400, 300, 300); // adjust as needed
+        startButton.setBounds(500, 400, 300, 300);
         startButton.addActionListener(this);
         startButton.setOpaque(false);
         startButton.setContentAreaFilled(false);
         startButton.setBorderPainted(false);
         backgroundLabel.add(startButton);
-
-        // character buttons
-        mrScrappyButton = new JButton();
-        mrScrappyButton.setBounds(1040, 270, 70, 100); // adjust as needed
-        mrScrappyButton.addActionListener(this);
-        mrScrappyButton.setOpaque(false);
-        mrScrappyButton.setContentAreaFilled(false);
-        mrScrappyButton.setBorderPainted(false);
-        backgroundLabel.add(mrScrappyButton);
-        mrScrappyButton.setEnabled(false);
-
-        banditaButton = new JButton();
-        banditaButton.setBounds(30, 320, 150, 200); // adjust as needed
-        banditaButton.addActionListener(this);
-        banditaButton.setOpaque(false);
-        banditaButton.setContentAreaFilled(false);
-        banditaButton.setBorderPainted(false);
-        backgroundLabel.add(banditaButton);
-        banditaButton.setEnabled(false);
-
-        chadcoonButton = new JButton();
-        chadcoonButton.setBounds(980, 540, 200, 200); // adjust as needed
-        chadcoonButton.addActionListener(this);
-        chadcoonButton.setOpaque(false);
-        chadcoonButton.setContentAreaFilled(false);
-        chadcoonButton.setBorderPainted(false);
-        backgroundLabel.add(chadcoonButton);
-        chadcoonButton.setEnabled(false);
-
-        // Match frame size to image exactly (excluding window borders)
-        setPreferredSize(new Dimension(1920, 1080));
-        pack(); // makes frame size match preferred size
-        setLocationRelativeTo(null); // center the window on screen
+        
+        pack();
+        setLocationRelativeTo(null);
         setVisible(true);
-
-        setFocusable(true);
-        addKeyListener(this);
-    }
-    public static void main(String[] args) {
-        new Main();
-        
-        // Create Raccoon objects
-        Raccoon Grancoon = new Raccoon("Grancoon", false, "Grandmaly", false);
-        Raccoon MrScrappy = new Raccoon("Mr. Scrappy", false, "Sophisticated", false);
-        Raccoon Bandita = new Raccoon("Bandita", false, "Sassy", false);
-        Raccoon Chadcoon = new Raccoon("Chadcoon", false, "Sleepy", false);
-        FinalBattle();
     }
 
-    public void generalSelection(){
-        currentIndex = 15;
-        backgroundLabel.setIcon(backgrounds.get(currentIndex));
-        
-        mrScrappyButton.setEnabled(!mrScrappy);
-        banditaButton.setEnabled(!bandita);
-        chadcoonButton.setEnabled(!chadcoon);
-    }
-
-    public void scrappyMiniGame(){
-        Image miniGame = new ImageIcon("17.png").getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-        backgroundLabel.setIcon(new ImageIcon(miniGame));
-
-    }
-
-    public void banditaDialogue(){
-        currentIndex = 29; // index for 29.png
-        backgroundLabel.setIcon(backgrounds.get(currentIndex));
-    }
-
-    public void chadcoonDialogue(){
-        currentIndex = 24; // index for 26.png in your list
-        backgroundLabel.setIcon(backgrounds.get(currentIndex));
-    }
-
-    @Override
+     @Override
         public void actionPerformed(ActionEvent e){
         if (e.getSource() == startButton){
             // Load the new image
-            ImageIcon newIcon = new ImageIcon("2.png"); // replace with your new image filename
+            ImageIcon newIcon = new ImageIcon("2.png");
             Image scaledImage = newIcon.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
             ImageIcon scaledIcon = new ImageIcon(scaledImage);
 
@@ -200,57 +65,35 @@ public class Main extends JFrame implements ActionListener, KeyListener{
 
             System.out.println("start the game, background changed");
         }
-
-        if (e.getSource() == mrScrappyButton){
-            mrScrappy = true;
-            scrappyMiniGame();
-        }
-
-        if (e.getSource() == banditaButton){
-            bandita = true;
-            banditaDialogue();
-        }
-
-        if (e.getSource() == chadcoonButton){
-            chadcoon = true;
-            chadcoonDialogue();
-        }
     }
-
+    
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
-        if (!allowScroll) return; // Scrolling disabled at checkpoint
-
+        // Right arrow = next image
         if (key == KeyEvent.VK_RIGHT) {
-            if (currentIndex < backgrounds.size() - 1) {
+            if (currentIndex < images.size() - 1) {
                 currentIndex++;
-                backgroundLabel.setIcon(backgrounds.get(currentIndex));
-
-                if (checkpoints.contains(currentIndex)) {
-                    allowScroll = false; // lock scrolling
-                    if (currentIndex == 12 || currentIndex == 26){
-                        generalSelection();
-                    } else if (currentIndex == 16){
-                        scrappyMiniGame();
-                    } else if (currentIndex == 29){
-                        banditaDialogue();
-                    }
-                    
-                    //triggerCheckpoint(currentIndex); // show tasks
-                }
+                backgroundLabel.setIcon(images.get(currentIndex));
             }
-        } else if (key == KeyEvent.VK_LEFT) {
+        }
+
+        // Left arrow = previous image
+        if (key == KeyEvent.VK_LEFT) {
             if (currentIndex > 0) {
                 currentIndex--;
-                backgroundLabel.setIcon(backgrounds.get(currentIndex));
+                backgroundLabel.setIcon(images.get(currentIndex));
             }
         }
     }
 
     @Override public void keyReleased(KeyEvent e) {}
     @Override public void keyTyped(KeyEvent e) {}
+
+    public static void main(String[] args) {
+        new Test();
+    }
 
     // public static void Grancoon() {
     //     Grancoon.setTalking(true);
