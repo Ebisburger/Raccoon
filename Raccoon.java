@@ -2,13 +2,13 @@ public class Raccoon{
     private String name;
     private boolean talking;
     private String personality;
-    private boolean tokenGiven;
+    private boolean timbitGiven;
 
-    public Raccoon(String name, boolean talking, String personality, boolean tokenGiven) {
+    public Raccoon(String name, boolean talking, String personality, boolean timbitsGiven) {
         this.name = name;
         this.talking = talking;
         this.personality = personality;
-        this.tokenGiven = tokenGiven;
+        this.timbitGiven = timbitsGiven;
 
     }
 
@@ -24,8 +24,8 @@ public class Raccoon{
         return personality;
     }
 
-    public boolean isTokenGiven() {
-        return tokenGiven;
+    public boolean isTimbitGiven() {
+        return timbitGiven;
     }
     public void setName(String name) {
         this.name = name;
@@ -38,7 +38,7 @@ public class Raccoon{
         this.personality = personality;
     }
 
-    public void setTokenGiven(boolean tokenGiven) {
-        this.tokenGiven = tokenGiven;
+    public void setTimbitGiven(boolean timbitsGiven) {
+        this.timbitGiven = timbitsGiven;
     }
 }
