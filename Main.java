@@ -1,30 +1,44 @@
-import java.util.Scanner;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-public class Test extends JFrame implements ActionListener, KeyListener {
+public class Main extends JFrame implements ActionListener, KeyListener {
     JButton startButton;
     JLabel backgroundLabel;
     ArrayList<ImageIcon> images = new ArrayList<>();
     int currentIndex = 0;
 
-    public Test() {
-        // Window setup
+    // Battle-related components
+    JButton healButton, attackButton, shieldButton, noneButton;
+    JLabel playerHpLabel, managerHpLabel;
+    JLabel healLabel, attackLabel, shieldLabel, noneLabel;
+    JPanel buttonPanel; // <- Changed to instance variable
+
+    // Battle state
+    Player trashDiver;
+    ManagerCoonCoon managerCoonCoon;
+    boolean CoonCoonDefeated = false;
+    int healingTimbits = 3;
+    int attackTimbits = 3;
+    int shieldTimbits = 3;
+
+    boolean timbitsUsedUp = false;
+
+    public Main() {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(null);
         setPreferredSize(new Dimension(1320, 780));
         setFocusable(true);
         addKeyListener(this);
 
+        // Load background images
         String[] paths = {
-            "1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png",
-            "9.png", "10.png", "11.png", "12.png", "13.png", "14.png", "15.png",
-            "16.png", "17.png", "18.png", "19.png", "20.png", "21.png", "22.png",
-            "23.png", "24.png", "25.png", "26.png", "27.png", "28.png", "29.png",
-            "30.png", "31.png", "32.png", "33.png", "34.png", "35.png", "36.png",
+                "1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png",
+                "9.png", "10.png", "11.png", "12.png", "13.png", "14.png", "15.png",
+                "16.png", "17.png", "18.png", "19.png", "20.png", "21.png", "22.png",
+                "23.png", "24.png", "25.png", "26.png", "27.png", "28.png", "29.png",
+                "30.png", "31.png", "32.png", "33.png", "34.png", "35.png", "36.png",
         };
 
         for (String path : paths) {
@@ -33,11 +47,10 @@ public class Test extends JFrame implements ActionListener, KeyListener {
             images.add(new ImageIcon(scaled));
         }
 
-        // Image display
         backgroundLabel = new JLabel(images.get(currentIndex));
         backgroundLabel.setBounds(0, 0, 1320, 780);
         add(backgroundLabel);
-        
+
         startButton = new JButton();
         startButton.setBounds(500, 400, 300, 300);
         startButton.addActionListener(this);
@@ -45,226 +58,272 @@ public class Test extends JFrame implements ActionListener, KeyListener {
         startButton.setContentAreaFilled(false);
         startButton.setBorderPainted(false);
         backgroundLabel.add(startButton);
-        
+
+        // Load and scale button images
+        ImageIcon healIcon = scaleIcon(new ImageIcon("heal_btn.png"), 75, 75);
+        ImageIcon attackIcon = scaleIcon(new ImageIcon("attack_btn.png"), 75, 75);
+        ImageIcon shieldIcon = scaleIcon(new ImageIcon("shield_btn.png"), 75, 75);
+        ImageIcon noneIcon = scaleIcon(new ImageIcon("none_btn.png"), 75, 75);
+
+        healButton = new JButton(healIcon);
+        attackButton = new JButton(attackIcon);
+        shieldButton = new JButton(shieldIcon);
+        noneButton = new JButton(noneIcon);
+
+        for (JButton btn : new JButton[] { healButton, attackButton, shieldButton, noneButton }) {
+            btn.setBorderPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setFocusPainted(false);
+            btn.setOpaque(false);
+            btn.setPreferredSize(new Dimension(180, 60));
+        }
+
+        healLabel = new JLabel("Heal");
+        attackLabel = new JLabel("Attack Boost");
+        shieldLabel = new JLabel("Shield");
+        noneLabel = new JLabel("None");
+
+        for (JLabel label : new JLabel[] { healLabel, attackLabel, shieldLabel, noneLabel }) {
+            label.setForeground(Color.WHITE);
+            label.setFont(new Font("Arial", Font.BOLD, 16));
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+        }
+
+        buttonPanel = new JPanel(new GridLayout(2, 4, 30, 5));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBounds(210, 650, 900, 110);
+
+        buttonPanel.add(healButton);
+        buttonPanel.add(attackButton);
+        buttonPanel.add(shieldButton);
+        buttonPanel.add(noneButton);
+        buttonPanel.add(healLabel);
+        buttonPanel.add(attackLabel);
+        buttonPanel.add(shieldLabel);
+        buttonPanel.add(noneLabel);
+
+        backgroundLabel.add(buttonPanel);
+
+        healButton.addActionListener(e -> useHealingTimbit());
+        attackButton.addActionListener(e -> useAttackTimbit());
+        shieldButton.addActionListener(e -> useShieldTimbit());
+        noneButton.addActionListener(e -> playerAttacks());
+
+        setBattleButtonsVisible(false);
+
+        playerHpLabel = new JLabel();
+        playerHpLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        playerHpLabel.setForeground(Color.WHITE);
+        playerHpLabel.setBounds(50, 50, 400, 40);
+        backgroundLabel.add(playerHpLabel);
+
+        managerHpLabel = new JLabel();
+        managerHpLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        managerHpLabel.setForeground(Color.WHITE);
+        managerHpLabel.setBounds(50, 100, 400, 40);
+        backgroundLabel.add(managerHpLabel);
+
+        playerHpLabel.setVisible(false);
+        managerHpLabel.setVisible(false);
+
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
-     @Override
-        public void actionPerformed(ActionEvent e){
-        if (e.getSource() == startButton){
-            // Load the new image
+    private ImageIcon scaleIcon(ImageIcon icon, int w, int h) {
+        Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
+    }
+
+    private void setBattleButtonsVisible(boolean visible) {
+        healButton.setVisible(visible);
+        attackButton.setVisible(visible);
+        shieldButton.setVisible(visible);
+        noneButton.setVisible(visible);
+        healLabel.setVisible(visible);
+        attackLabel.setVisible(visible);
+        shieldLabel.setVisible(visible);
+        noneLabel.setVisible(visible);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == startButton) {
             ImageIcon newIcon = new ImageIcon("2.png");
             Image scaledImage = newIcon.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
-            ImageIcon scaledIcon = new ImageIcon(scaledImage);
-
-            // Update the label's icon
-            backgroundLabel.setIcon(scaledIcon);
+            backgroundLabel.setIcon(new ImageIcon(scaledImage));
             startButton.setVisible(false);
-
-            System.out.println("start the game, background changed");
         }
     }
-    
+
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
-        // Right arrow = next image
         if (key == KeyEvent.VK_RIGHT) {
-            if (currentIndex < images.size() - 1) {
+            if (timbitsUsedUp && currentIndex < images.size() - 1) {
                 currentIndex++;
                 backgroundLabel.setIcon(images.get(currentIndex));
+            } else if (!timbitsUsedUp && currentIndex < images.size() - 1) {
+                currentIndex++;
+                backgroundLabel.setIcon(images.get(currentIndex));
+
+                if (currentIndex == 31) {
+                    startFinalBattle();
+                }
             }
         }
 
-        // Left arrow = previous image
-        if (key == KeyEvent.VK_LEFT) {
-            if (currentIndex > 0) {
-                currentIndex--;
-                backgroundLabel.setIcon(images.get(currentIndex));
-            }
+        if (key == KeyEvent.VK_LEFT && !timbitsUsedUp && currentIndex > 0) {
+            currentIndex--;
+            backgroundLabel.setIcon(images.get(currentIndex));
         }
     }
 
-    @Override public void keyReleased(KeyEvent e) {}
-    @Override public void keyTyped(KeyEvent e) {}
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
 
     public static void main(String[] args) {
-        new Test();
+        new Main();
     }
 
-    // public static void Grancoon() {
-    //     Grancoon.setTalking(true);
+    private void startFinalBattle() {
+        ImageIcon newIcon = new ImageIcon("37.png");
+        Image scaledImage = newIcon.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
+        backgroundLabel.setIcon(new ImageIcon(scaledImage));
 
-    // }
+        trashDiver = new Player(200);
+        managerCoonCoon = new ManagerCoonCoon("Manager CoonCoon", true, "Bossy", true, 250);
+        CoonCoonDefeated = false;
+        timbitsUsedUp = false;
 
-    // public static void MrScrappy() {
-    //     MrScrappy.setTalking(true);
-    // }
+        healingTimbits = 3;
+        attackTimbits = 3;
+        shieldTimbits = 3;
 
-    // public static void Bandita() {
-    //     Bandita.setTalking(true);
-    // }
+        setBattleButtonsVisible(true);
+        buttonPanel.setVisible(true);
+        playerHpLabel.setVisible(true);
+        managerHpLabel.setVisible(true);
 
-    // public static void Chadcoon() {
-    //     Chadcoon.setTalking(true);
-    // }
+        updateHpLabels();
+    }
 
-    public static void FinalBattle() {
-    Player trashDiver = new Player(200);
-    ManagerCoonCoon managerCoonCoon = new ManagerCoonCoon("Manager CoonCoon", true, "Bossy", true, 250);
-    boolean CoonCoonDefeated = false;
+    private void updateHpLabels() {
+        playerHpLabel.setText("Your HP: " + trashDiver.getHp());
+        managerHpLabel.setText("Manager CoonCoon HP: " + managerCoonCoon.getHp());
+    }
 
-    int healingTimbits = 3;
-    int attackTimbits = 3;
-    int shieldTimbits = 3;
-
-    Scanner scanner = new Scanner(System.in);
-
-    while (!CoonCoonDefeated) {
-        // Player attacks
+    private void playerAttacks() {
         int playerDamage = trashDiver.AttackDamage();
         managerCoonCoon.setHp(managerCoonCoon.getHp() - playerDamage);
-        System.out.println("You attacked Manager CoonCoon for " + playerDamage + " damage!");
+        updateHpLabels();
 
-        // Check if Manager CoonCoon is defeated
         if (managerCoonCoon.getHp() <= 0) {
-            System.out.println("Manager CoonCoon has been defeated!");
-            CoonCoonDefeated = true;
-            break;
+            showBattleResult("Manager CoonCoon has been defeated!");
+            return;
         }
 
-        // Manager CoonCoon attacks
-        int CoonDamage = managerCoonCoon.TrashAttackDamage();
-        trashDiver.setHp(trashDiver.getHp() - CoonDamage);
-        System.out.println("Manager CoonCoon attacked you for " + CoonDamage + " damage!");
+        managerTurn();
+    }
 
-        // Check if Player is defeated
+    private void managerTurn() {
+        int damage = managerCoonCoon.TrashAttackDamage();
+        trashDiver.setHp(trashDiver.getHp() - damage);
+        updateHpLabels();
+
         if (trashDiver.getHp() <= 0) {
-            System.out.println("You have been defeated by Manager CoonCoon!");
-            break;
+            showBattleResult("You have been defeated by Manager CoonCoon!");
+            return;
         }
 
-        // Display current HP
-        System.out.println("Your current HP: " + trashDiver.getHp());
-        System.out.println("Manager CoonCoon's current HP: " + managerCoonCoon.getHp());
-
-        boolean validChoice = false;
-
-        while (!validChoice) {
-            System.out.println("Choose a timbit to use:");
-            System.out.println("1. Healing timbit (" + healingTimbits + " left)");
-            System.out.println("2. Attack boost timbit (" + attackTimbits + " left)");
-            System.out.println("3. Shield timbit (" + shieldTimbits + " left)");
-            System.out.println("4. None");
-            System.out.print("Enter your choice (1-4): ");
-
-            int timbitChoice;
-            try {
-                timbitChoice = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                timbitChoice = 0;
-            }
-
-            switch (timbitChoice) {
-                case 1:
-                    if (healingTimbits > 0) {
-                        System.out.println("Do you want to use a healing timbit? (yes/no)");
-                        String healChoice = scanner.nextLine().toLowerCase();
-                        if (healChoice.equals("yes")) {
-                            HealingTim(trashDiver);
-                            healingTimbits--;
-                            validChoice = true;
-                        } else if (healChoice.equals("no")) {
-                            System.out.println("You chose not to heal yourself.");
-                            validChoice = true;
-                        } else {
-                            System.out.println("Invalid choice. Please type 'yes' or 'no'.");
-                        }
-                    } else {
-                        System.out.println("No healing timbits remaining!");
-                    }
-                    break;
-                case 2:
-                    if (attackTimbits > 0) {
-                        System.out.println("Do you want to use an attack boost timbit? (yes/no)");
-                        String attackChoice = scanner.nextLine().toLowerCase();
-                        if (attackChoice.equals("yes")) {
-                            AttackTim(trashDiver);
-                            attackTimbits--;
-                            validChoice = true;
-                        } else if (attackChoice.equals("no")) {
-                            System.out.println("You chose not to use an attack boost timbit.");
-                            validChoice = true;
-                        } else {
-                            System.out.println("Invalid choice. Please type 'yes' or 'no'.");
-                        }
-                    } else {
-                        System.out.println("No attack boost timbits remaining!");
-                    }
-                    break;
-                case 3:
-                    if (shieldTimbits > 0) {
-                        System.out.println("Do you want to use a shield timbit? (yes/no)");
-                        String shieldChoice = scanner.nextLine().toLowerCase();
-                        if (shieldChoice.equals("yes")) {
-                            ShieldTim(trashDiver, managerCoonCoon);
-                            shieldTimbits--;
-                            validChoice = true;
-                        } else if (shieldChoice.equals("no")) {
-                            System.out.println("You chose not to use a shield timbit.");
-                            validChoice = true;
-                        } else {
-                            System.out.println("Invalid choice. Please type 'yes' or 'no'.");
-                        }
-                    } else {
-                        System.out.println("No shield timbits remaining!");
-                    }
-                    break;
-                case 4:
-                    System.out.println("You chose not to use a timbit this turn.");
-                    validChoice = true;
-                    break;
-                default:
-                    System.out.println("Invalid choice. Please try again.");
-                    break;
-            }
+        if (Math.random() < 0.1) {
+            managerCoonCoon.HealAmount();
+            updateHpLabels();
+            JOptionPane.showMessageDialog(this, "Manager CoonCoon healed!");
         }
+    }
 
-        // Manager CoonCoon healing option
-        int randomChance = (int) (Math.random() * 10);
-        if (randomChance < 1) { // 10% chance for Manager CoonCoon to heal
-            CoonCoonHeals(managerCoonCoon);
+    private void useHealingTimbit() {
+        if (healingTimbits > 0) {
+            trashDiver.healingTim();
+            healingTimbits--;
+            JOptionPane.showMessageDialog(this, "You used a healing timbit!");
         } else {
-            System.out.println("Manager CoonCoon did not heal this turn.");
+            JOptionPane.showMessageDialog(this, "No healing timbits remaining!");
+        }
+        checkAllTimbitsUsed();
+        playerAttacks();
+    }
+
+    private void useAttackTimbit() {
+        if (attackTimbits > 0) {
+            int boost = (int) (Math.random() * 10 + 5);
+            trashDiver.setAttackDamage(trashDiver.AttackDamage() + boost);
+            attackTimbits--;
+            JOptionPane.showMessageDialog(this, "Attack boost timbit used!");
+        } else {
+            JOptionPane.showMessageDialog(this, "No attack boost timbits remaining!");
+        }
+        checkAllTimbitsUsed();
+        playerAttacks();
+    }
+
+    private void useShieldTimbit() {
+        if (shieldTimbits > 0) {
+            int shieldAmount = managerCoonCoon.TrashAttackDamage();
+            trashDiver.setHp(trashDiver.getHp() + shieldAmount);
+            shieldTimbits--;
+            JOptionPane.showMessageDialog(this, "Shield timbit used! HP increased by " + shieldAmount);
+        } else {
+            JOptionPane.showMessageDialog(this, "No shield timbits remaining!");
+        }
+        checkAllTimbitsUsed();
+        playerAttacks();
+    }
+
+    private void checkAllTimbitsUsed() {
+        if (!timbitsUsedUp && healingTimbits == 0 && attackTimbits == 0 && shieldTimbits == 0) {
+            timbitsUsedUp = true;
+
+            ImageIcon finalImage = new ImageIcon("32.png");
+            Image scaled = finalImage.getImage().getScaledInstance(1320, 780, Image.SCALE_SMOOTH);
+            backgroundLabel.setIcon(new ImageIcon(scaled));
+
+            setBattleButtonsVisible(false);
+            if (buttonPanel != null)
+                buttonPanel.setVisible(false);
+            playerHpLabel.setVisible(false);
+            managerHpLabel.setVisible(false);
+
+            JOptionPane.showMessageDialog(this, "All timbits used! Press → to continue.");
         }
     }
-}
 
-    // Methods for using timbits
-    public static void HealingTim(Player trashDiver) {
-        trashDiver.healingTim();
-        System.out.println("You healed yourself. Your current HP is: " + trashDiver.getHp());
+    private void showBattleResult(String message) {
+        JOptionPane.showMessageDialog(this, message);
+        disableAllButtons();
+
+        // Clean up UI after battle
+        setBattleButtonsVisible(false);
+        if (buttonPanel != null)
+            buttonPanel.setVisible(false);
+        playerHpLabel.setVisible(false);
+        managerHpLabel.setVisible(false);
+
+        timbitsUsedUp = true;
     }
 
-    public static void AttackTim(Player trashDiver) {
-        int attackBoost = (int) (Math.random() * 10 + 5);
-        trashDiver.setAttackDamage(trashDiver.AttackDamage() + attackBoost);
-        System.out.println("You used an attack boost timbit! Your attack damage is now: " + trashDiver.AttackDamage());
+    private void disableAllButtons() {
+        healButton.setEnabled(false);
+        attackButton.setEnabled(false);
+        shieldButton.setEnabled(false);
+        noneButton.setEnabled(false);
     }
-
-    public static void ShieldTim(Player trashDiver, ManagerCoonCoon managerCoonCoon){
-        int shieldAmount = managerCoonCoon.TrashAttackDamage();
-        trashDiver.setHp(trashDiver.getHp() + shieldAmount);
-        System.out.println("You used a shield timbit!");
-    }
-
-    // Method for Manager CoonCoon healing themselves
-    public static void CoonCoonHeals(ManagerCoonCoon managerCoonCoon) {
-        managerCoonCoon.HealAmount();
-        System.out.println("Manager CoonCoon healed themselves. Their current HP is: " + managerCoonCoon.getHp());
-    }
-
 }
